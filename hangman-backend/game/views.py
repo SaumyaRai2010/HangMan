@@ -10,11 +10,13 @@ import random
 
 words = ["Hangman", "Python", "Audacix", "Bottle", "Pen"]
 
+#exclude the word from game state if the game is in progress so that word is not sent in the response to UI
 def exclude_word_if_in_progress(game_state):
     """Helper function to exclude the word from game state if the game is in progress."""
     if game_state.get("state") == "InProgress":
         game_state.pop("word", None)
 
+#creates a new game with a random word
 @api_view(['POST'])
 def new_game(request):
     word = random.choice(words).upper()
@@ -22,6 +24,7 @@ def new_game(request):
     game = Game.objects.create(word=word, max_incorrect_guesses=max_incorrect_guesses)
     return Response({'id': game.id}, status=status.HTTP_201_CREATED)
 
+#retrieve the current state of a game
 @api_view(['GET'])
 def game_state(request, id):
     game = get_object_or_404(Game, id=id)
@@ -30,6 +33,7 @@ def game_state(request, id):
     exclude_word_if_in_progress(game_state)
     return Response(game_state)
 
+#process a user's guess and update the game state
 @api_view(['POST'])
 def make_guess(request, id):
     game = get_object_or_404(Game, id=id)
@@ -63,12 +67,14 @@ def make_guess(request, id):
     exclude_word_if_in_progress(game_state)
     return Response(game_state)
 
+#delete a game by ID
 @api_view(['DELETE'])
 def delete_game(request, id):
     game = get_object_or_404(Game, id=id)
     game.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
 
+#resets the current game and allows user to start a new game
 @api_view(['POST'])
 def reset_game(request, id):
     game = get_object_or_404(Game, id=id)

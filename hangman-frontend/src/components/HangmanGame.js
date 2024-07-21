@@ -1,16 +1,20 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { newGame, getGameState, makeGuess, resetGame } from "../apiService";
 
 const HangmanGame = () => {
-  const [gameId, setGameId] = useState(null);
-  const [gameState, setGameState] = useState({});
-  const [guess, setGuess] = useState("");
-  const [message, setMessage] = useState("");
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [gameId, setGameId] = useState(null); //the ID of the current game
+  const [gameState, setGameState] = useState({}); //stores the state of the game, including the revealed word, incorrect guesses, and game status
+  const [guess, setGuess] = useState(""); //stores the user's current guess
+  const [message, setMessage] = useState(""); //displays messages such as errors or game results
+  const [isDarkMode, setIsDarkMode] = useState(false); //manages the dark mode toggle state
 
-  const toggleDarkMode = () => setIsDarkMode(!isDarkMode);
+  // we wrap toggleDarkMode in useCB because we don't need to call it on every render (every time state changes)
+  const toggleDarkMode = useCallback(() => {
+    setIsDarkMode((prevMode) => !prevMode);
+  }, []);
 
-  const startNewGame = async () => {
+  // starts a new game
+  const startNewGame = useCallback(async () => {
     try {
       const response = await newGame();
       setGameId(response.data.id);
@@ -18,20 +22,21 @@ const HangmanGame = () => {
     } catch (error) {
       console.error("Error starting a new game:", error);
     }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const isGameOver = gameState.state === "Won" || gameState.state === "Lost";
-
-  const fetchGameState = async (id) => {
+  // fetch game state
+  const fetchGameState = useCallback(async (id) => {
     try {
       const response = await getGameState(id);
       setGameState(response.data);
     } catch (error) {
       console.error("Error fetching game state:", error);
     }
-  };
+  }, []);
 
-  const handleGuess = async () => {
+  //handles any guesses made by the player
+  const handleGuess = useCallback(async () => {
     if (guess.length !== 1 || !/^[a-zA-Z]$/.test(guess)) {
       setMessage("Invalid guess. Please enter a single alphabet.");
       return;
@@ -53,9 +58,10 @@ const HangmanGame = () => {
       setMessage("An unexpected error occurred.");
     }
     setGuess("");
-  };
+  }, [guess, gameId]);
 
-  const handleResetGame = async () => {
+  // resets the game
+  const handleResetGame = useCallback(async () => {
     try {
       await resetGame(gameId);
       setGameId(null);
@@ -65,7 +71,9 @@ const HangmanGame = () => {
     } catch (error) {
       console.error("Error resetting the game:", error);
     }
-  };
+  }, [gameId]);
+
+  const isGameOver = gameState.state === "Won" || gameState.state === "Lost";
 
   return (
     <div
@@ -155,7 +163,7 @@ const HangmanGame = () => {
                   : "text-red-700" // Darker red for light mode
                 : isDarkMode
                 ? "text-red-300" // Lighter red for dark mode
-                : "text-red-700" 
+                : "text-red-700"
             }`}
           >
             {message}
